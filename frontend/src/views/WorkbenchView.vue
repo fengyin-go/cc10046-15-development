@@ -15,6 +15,8 @@
       </div>
     </header>
 
+    <RetryClosurePanel v-if="meta.key === 'error_retry' || meta.key === 'page_closure_detail' || meta.key === 'page_closure'" />
+
     <div class="stat-row">
       <article v-for="item in stats" :key="item.label" class="stat-card">
         <span class="stat-label">{{ item.label }}</span>
@@ -104,6 +106,7 @@ import {
   runAction as applyAction,
 } from '@/api/backend-service'
 import type { EntryRow } from '@/data/types'
+import RetryClosurePanel from '@/components/RetryClosurePanel.vue'
 
 const props = defineProps<{ moduleKey: string }>()
 const meta = moduleMeta(props.moduleKey)

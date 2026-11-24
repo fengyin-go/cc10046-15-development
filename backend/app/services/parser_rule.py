@@ -14,8 +14,13 @@ class ParserRuleService(BaseModuleService):
     ACTION_RULES = {"提交校验": "待校验", "启用规则": "已启用", "停用规则": "已停用"}
     NEGATIVE_ACTIONS = ["停用规则"]
 
-    def domain_parse_html(self, html_content: str, rule_id: int = 0) -> dict:
-        """使用规则解析HTML内容提取字段。"""
+    def domain_parse_html(self, html_content: str, rule_id: int = 0,
+                          raw_response_id: str = "", **kwargs) -> dict:
+        """使用规则解析HTML内容提取字段。
+
+        额外保留 raw_response_id / content_hash，供页面结案明细关联原始页和提取结果。
+        """
+        from app.compute import content_hash
         from html.parser import HTMLParser
 
         class TextExtractor(HTMLParser):
@@ -37,6 +42,9 @@ class ParserRuleService(BaseModuleService):
 
         return {
             "rule_id": rule_id,
+            "raw_response_id": raw_response_id or kwargs.get("raw_id", ""),
+            "content_hash": content_hash(html_content or ""),
+            "response_text_consumed": bool(html_content),
             "field_count": len(extractor.texts),
             "extracted_fields": extractor.texts[:20],
             "html_length": len(html_content),

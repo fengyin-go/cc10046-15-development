@@ -23,6 +23,7 @@ from app.services.session_manager import SessionManagerService
 from app.services.export_channel import ExportChannelService
 from app.services.crawl_audit import CrawlAuditService
 from app.services.data_cleanup import DataCleanupService
+from app.services.page_closure import board as page_closure_board
 
 router = APIRouter(prefix="/api/chains", tags=["业务链路"])
 
@@ -115,6 +116,16 @@ def run_reliability(payload: dict[str, Any]) -> dict[str, Any]:
     log_result = _logger.domain_log_error(
         "ERR-CHECK", f"可靠性检查 {site}", site)
 
+    closure_step: dict | None = None
+    if payload.get("scenario") in {"canonical", "page-6-late-receipt-page-7-gateway"} or payload.get("run_canonical"):
+        closure_step = page_closure_board.run_canonical_scenario(**{
+            k: v for k, v in payload.items()
+            if k in {"worker", "valid_html", "gateway_html", "receipt_id"}
+        })
+    elif payload.get("closure_command") or payload.get("page_closure_command"):
+        command = payload.get("closure_command") or payload.get("page_closure_command")
+        closure_step = page_closure_board.dispatch(str(command), payload.get("closure_payload") or payload)
+
     return {
         "chain": "reliability",
         "steps": {
@@ -122,8 +133,27 @@ def run_reliability(payload: dict[str, Any]) -> dict[str, Any]:
             "check_rate": rate_result,
             "retry_calc": retry_result,
             "log_error": {"error_code": log_result["错误码"], "error_message": log_result["错误信息"]},
+            **({"page_closure": closure_step} if closure_step is not None else {}),
         },
     }
+
+
+@router.post("/page-closure")
+def run_page_closure_chain(payload: dict[str, Any]) -> dict[str, Any]:
+    """页面独立结案链路：上报超时 → 派工领取 → 回执/正文解析 → 结案/报警/采样。"""
+    if payload.get("scenario") == "canonical" or payload.get("run_canonical"):
+        result = page_closure_board.run_canonical_scenario(**{
+            k: v for k, v in payload.items()
+            if k in {"worker", "valid_html", "gateway_html", "receipt_id"}
+        })
+        return {"chain": "page-closure", "steps": {"page_closure": result}, **result}
+
+    command = str(payload.get("command") or payload.get("action") or "state")
+    if command == "state":
+        result = page_closure_board.state(str(payload.get("worker") or "乙"))
+    else:
+        result = page_closure_board.dispatch(command, payload)
+    return {"chain": "page-closure", "command": command, "steps": {"page_closure": result}, "result": result}
 
 
 @router.post("/auth")

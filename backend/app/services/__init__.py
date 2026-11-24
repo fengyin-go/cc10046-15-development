@@ -14,6 +14,7 @@ from app.services.result_store import ResultStoreService
 from app.services.dedup_engine import DedupEngineService
 from app.services.field_mapper import FieldMapperService
 from app.services.error_retry import ErrorRetryService
+from app.services.page_closure import PageClosureDetailService
 from app.services.batch_tracker import BatchTrackerService
 from app.services.export_channel import ExportChannelService
 from app.services.crawl_audit import CrawlAuditService
@@ -37,6 +38,12 @@ SERVICES: dict[str, BaseModuleService] = {
     "dedup_engine": DedupEngineService(),
     "field_mapper": FieldMapperService(),
     "error_retry": ErrorRetryService(),
+    "page_closure_detail": PageClosureDetailService(),
+    "page_closure_details": PageClosureDetailService(),
+    "page_closure": PageClosureDetailService(),
+    "page_closures": PageClosureDetailService(),
+    "page-closure": PageClosureDetailService(),
+    "page-closures": PageClosureDetailService(),
     "batch_tracker": BatchTrackerService(),
     "export_channel": ExportChannelService(),
     "crawl_audit": CrawlAuditService(),
